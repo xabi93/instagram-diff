@@ -1,12 +1,16 @@
 package main
 
 import (
+	"bufio"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"os"
+	"syscall"
 
 	instadiff "github.com/xabi93/instagram-diff"
+	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/xabi93/instagram-diff/instagram"
 	"github.com/xabi93/instagram-diff/server"
@@ -16,13 +20,10 @@ func main() {
 	var a App
 
 	a.Init()
-
 	a.Run()
 }
 
 type Conf struct {
-	user        string
-	password    string
 	sessionFile string
 	port        string
 }
@@ -32,14 +33,11 @@ type App struct {
 }
 
 func (a *App) Init() {
-	flag.StringVar(&a.cfg.user, "user", "", "Instagram username")
-	flag.StringVar(&a.cfg.password, "password", "", "Instagram password")
-
 	home, err := os.UserHomeDir()
 	if err != nil {
 		log.Fatal(err)
 	}
-	flag.StringVar(&a.cfg.sessionFile, "sessionFile", fmt.Sprintf("%s/.instadiff", home), "Insta diff session file")
+	flag.StringVar(&a.cfg.sessionFile, "sessionFile", fmt.Sprintf("%s/.instadiff", home), "Session file")
 
 	flag.StringVar(&a.cfg.port, "port", "3000", "Port to expose result")
 
@@ -67,9 +65,11 @@ func (a App) login() (*instadiff.Instadiff, error) {
 		return instadiff.New(i), nil
 	}
 
+	user, pass, err := a.askUserPass()
+
 	fmt.Println("Login...")
 
-	i, err = instagram.Login(a.cfg.user, a.cfg.password, a.cfg.sessionFile)
+	i, err = instagram.Login(user, pass, a.cfg.sessionFile)
 	if err != nil {
 		return nil, err
 	}
@@ -79,11 +79,45 @@ func (a App) login() (*instadiff.Instadiff, error) {
 
 func (a App) restore() (*instagram.Instagram, error) {
 	if _, err := os.Stat(a.cfg.sessionFile); os.IsNotExist(err) {
-		fmt.Println("Session file does not exist, skipping...")
 		return nil, nil
 	}
 
 	fmt.Printf("Restoring session from %s\n", a.cfg.sessionFile)
 
-	return instagram.RestoreSession(a.cfg.sessionFile)
+	i, err := instagram.RestoreSession(a.cfg.sessionFile)
+	if err != nil {
+		return nil, err
+	}
+
+	err = i.Ping()
+	if err == nil {
+		return i, nil
+	}
+	if errors.As(err, &instagram.AuthError{}) {
+		fmt.Println("Session outdated")
+		os.Remove(a.cfg.sessionFile)
+		return nil, nil
+	}
+
+	return i, nil
+}
+
+func (App) askUserPass() (string, string, error) {
+	reader := bufio.NewReader(os.Stdin)
+
+	fmt.Print("Enter Username: ")
+	username, err := reader.ReadString('\n')
+	if err != nil {
+		return "", "", err
+	}
+
+	fmt.Print("Enter Password: ")
+	bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
+	if err != nil {
+		return "", "", err
+	}
+
+	fmt.Print("\n")
+
+	return username, string(bytePassword), nil
 }

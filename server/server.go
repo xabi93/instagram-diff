@@ -13,7 +13,7 @@ import (
 func Serve(port string, differ *instadiff.Instadiff) error {
 	handler(differ)
 
-	fmt.Printf("Serving, at port: %s\n", port)
+	fmt.Printf("Showing result at: http://localhost:%s\n", port)
 
 	return http.ListenAndServe(net.JoinHostPort("", port), nil)
 }

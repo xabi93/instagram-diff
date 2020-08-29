@@ -2,7 +2,9 @@ package instagram
 
 import (
 	"context"
+	"errors"
 
+	"github.com/kr/pretty"
 	instadiff "github.com/xabi93/instagram-diff"
 
 	"github.com/ahmdrz/goinsta/v2"
@@ -28,7 +30,23 @@ func Login(user, pass, exportPath string) (*Instagram, error) {
 
 type Instagram struct{ instagram *goinsta.Instagram }
 
+type AuthError struct{ error }
+
+func (i Instagram) Ping() error {
+	err := i.instagram.Account.Sync()
+	errN := goinsta.ErrorN{}
+	if !errors.As(err, &errN) {
+		return err
+	}
+	if errN.Message == "login_required" {
+		return AuthError{errN}
+	}
+
+	return nil
+}
+
 func (i Instagram) Followers(_ context.Context) (map[int64]instadiff.User, error) {
+	pretty.Println()
 	return getAll(i.instagram.Account.Followers())
 }
 
@@ -37,6 +55,11 @@ func (i Instagram) Following(_ context.Context) (map[int64]instadiff.User, error
 }
 
 func getAll(i *goinsta.Users) (map[int64]instadiff.User, error) {
+	if err := i.Error(); err != nil {
+		pretty.Println(err)
+		return nil, err
+	}
+
 	users := make(map[int64]instadiff.User)
 	for i.Next() {
 		for _, u := range i.Users {
