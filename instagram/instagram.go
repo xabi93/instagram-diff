@@ -10,6 +10,8 @@ import (
 	"github.com/ahmdrz/goinsta/v2"
 )
 
+type AuthError struct{ error }
+
 func RestoreSession(path string) (*Instagram, error) {
 	i, err := goinsta.Import(path)
 
@@ -18,19 +20,22 @@ func RestoreSession(path string) (*Instagram, error) {
 
 func Login(user, pass, exportPath string) (*Instagram, error) {
 	i := goinsta.New(user, pass)
+	err := i.Login()
+	if err == nil {
+		i.Export(exportPath)
 
-	if err := i.Login(); err != nil {
-		return nil, err
+		return &Instagram{i}, nil
 	}
 
-	i.Export(exportPath)
+	authErr := goinsta.Error400{}
+	if errors.As(err, &authErr) {
+		return nil, AuthError{errors.New(authErr.Message)}
+	}
 
-	return &Instagram{i}, nil
+	return nil, err
 }
 
 type Instagram struct{ instagram *goinsta.Instagram }
-
-type AuthError struct{ error }
 
 func (i Instagram) Ping() error {
 	err := i.instagram.Account.Sync()
