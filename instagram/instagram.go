@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/kr/pretty"
-	instadiff "github.com/xabi93/instagram-diff"
 
 	"github.com/ahmdrz/goinsta/v2"
 )
@@ -35,10 +34,10 @@ func Login(user, pass, exportPath string) (*Instagram, error) {
 	return nil, err
 }
 
-type Instagram struct{ instagram *goinsta.Instagram }
+type Instagram struct{ *goinsta.Instagram }
 
 func (i Instagram) Ping() error {
-	err := i.instagram.Account.Sync()
+	err := i.Instagram.Account.Sync()
 	errN := goinsta.ErrorN{}
 	if !errors.As(err, &errN) {
 		return err
@@ -50,25 +49,24 @@ func (i Instagram) Ping() error {
 	return nil
 }
 
-func (i Instagram) Followers(_ context.Context) (map[int64]instadiff.User, error) {
-	pretty.Println()
-	return getAll(i.instagram.Account.Followers())
+func (i Instagram) Followers(_ context.Context) (map[int64]User, error) {
+	return getAll(i.Instagram.Account.Followers())
 }
 
-func (i Instagram) Following(_ context.Context) (map[int64]instadiff.User, error) {
-	return getAll(i.instagram.Account.Following())
+func (i Instagram) Following(_ context.Context) (map[int64]User, error) {
+	return getAll(i.Instagram.Account.Following())
 }
 
-func getAll(i *goinsta.Users) (map[int64]instadiff.User, error) {
+func getAll(i *goinsta.Users) (map[int64]User, error) {
 	if err := i.Error(); err != nil {
 		pretty.Println(err)
 		return nil, err
 	}
 
-	users := make(map[int64]instadiff.User)
+	users := make(map[int64]User)
 	for i.Next() {
 		for _, u := range i.Users {
-			users[u.ID] = instadiff.User{
+			users[u.ID] = User{
 				ID:         u.ID,
 				Username:   u.Username,
 				Fullname:   u.FullName,

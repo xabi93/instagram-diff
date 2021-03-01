@@ -5,11 +5,12 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"os"
 	"syscall"
 
-	instadiff "github.com/xabi93/instagram-diff"
 	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/xabi93/instagram-diff/instagram"
@@ -55,26 +56,48 @@ func (a App) Run() {
 	}
 }
 
-func (a App) login() (*instadiff.Instadiff, error) {
+func DownloadFile(filepath string, url string) error {
+	// Get the data
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// Create the file
+	out, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	// Write the body to file
+	_, err = io.Copy(out, resp.Body)
+	return err
+}
+
+var cli *instagram.Instagram
+
+func (a App) login() (*instagram.Instadiff, error) {
 	i, err := a.restore()
 	if err != nil {
 		return nil, err
 	}
-
+	cli = i
 	if i != nil {
-		return instadiff.New(i), nil
+		return instagram.New(i), nil
 	}
 
 	user, pass, err := a.askUserPass()
 
 	fmt.Println("Login...")
 
-	i, err = instagram.Login(user, pass, a.cfg.sessionFile)
+	cli, err = instagram.Login(user, pass, a.cfg.sessionFile)
 	if err != nil {
 		return nil, err
 	}
 
-	return instadiff.New(i), nil
+	return instagram.New(i), nil
 }
 
 func (a App) restore() (*instagram.Instagram, error) {

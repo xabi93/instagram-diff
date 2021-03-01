@@ -1,4 +1,4 @@
-package instadiff
+package instagram
 
 type User struct {
 	ID         int64

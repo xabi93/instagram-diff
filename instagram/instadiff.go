@@ -1,4 +1,4 @@
-package instadiff
+package instagram
 
 import (
 	"context"

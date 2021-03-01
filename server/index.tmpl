@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+
+<head>
+
+    <title>Followers/following</title>
+
+    <style>
+        body {
+            color: #555;
+            background-color: black;
+            font-family: sans-serif;
+            display: flex;
+            justify-content: space-around;
+        }
+
+        .list-title {
+            color: #fff;
+        }
+
+        .list {
+            background: #fff;
+            border-radius: 2px;
+            list-style: none;
+            padding: 10px 20px;
+        }
+
+        .list-item {
+            display: flex;
+            margin: 10px;
+            padding-bottom: 5px;
+            padding-top: 5px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .list-item:last-child {
+            border-bottom: none;
+        }
+
+        .list-item-link {
+            width: 100%;
+            color: inherit;
+            text-decoration: none;
+            display: flex;
+        }
+
+        .list-item-image {
+            border-radius: 50%;
+            width: 64px;
+        }
+
+        .list-item-content {
+            margin-left: 20px;
+        }
+
+        .list-item-content h4,
+        .list-item-content p {
+            margin: 0;
+        }
+
+        .list-item-content h4 {
+            margin-top: 10px;
+            font-size: 18px;
+        }
+
+        .list-item-content p {
+            margin-top: 5px;
+            color: #aaa;
+        }
+    </style>
+
+</head>
+
+<body>
+    {{range .}}
+    <div class="list-wrapper">
+        <h2 class="list-title">{{.Title}}
+            {{ if .Users }}
+                {{ len .Users }}
+            {{ end }}
+        </h2>
+        <ul class="list">
+            {{range .Users}}
+            <li class="list-item">
+                <a class="list-item-link" href="https://www.instagram.com/{{.Username}}" target="_blank">
+                    <div>
+                        <img src="{{.ProfilePic}}" class="list-item-image">
+                    </div>
+                    <div class="list-item-content">
+                        <h4>{{.Fullname}}</h4>
+                        <p>{{.Username}}</p>
+                    </div>
+                </a>
+            </li>
+            {{ else }}
+            <span>No users</span>
+            {{end}}
+        </ul>
+    </div>
+    {{ end }}
+</body>
+
+</html>
